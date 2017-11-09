@@ -14,6 +14,7 @@ module.exports = function(app) {
 
     /**
      * get :requestSport(ex.football) from all groups
+     * pass termKey for :requestSport
      */
     app.get('/group/:requestSport', (req, res) => {
         const requestSport = req.params.requestSport;
@@ -25,6 +26,7 @@ module.exports = function(app) {
 
     /**
      * get :requestGroup(ex.Europa_League, Australia) from :requestSport(ex.football)
+     * pass termKey for :requestSport or :requestGroup
      */
     app.get('/group/:requestSport/:requestGroup', (req, res) => {
         const requestSport = req.params.requestSport;
@@ -38,6 +40,7 @@ module.exports = function(app) {
     /**
      * get :requestLeague(ex.A-League etc) :requestGroup(ex.Europa_League, Australia) from :requestSport(ex.football)
      * Note : champions_league, Europa_League, World_Cup_Qualification_Play_Off in football will return empty
+     * pass termKey for :requestSport or :requestGroup or :requestLeague
      */
     app.get('/group/:requestSport/:requestGroup/:requestLeague', (req, res) => {
         const requestSport = req.params.requestSport;
@@ -50,33 +53,64 @@ module.exports = function(app) {
     });
 
     /**
-     * get all Events for selected sport
+     * get all Match(Live & Upcoming) Events for selected sport
      */
-    app.get('/event/:requestSport', (req, res) => {
+    app.get('/match/:requestSport', (req, res) => {
         const requestSport = req.params.requestSport;
 
-        getEvents(requestSport)
+        getEvents(requestSport, null, null, 'match')
             .then((body) => {
-                res.send(JSON.parse(body))
+                res.send(JSON.parse(body).events)
             });
     });
 
-    app.get('/event/:requestSport/:requestGroup', (req, res) => {
+    app.get('/match/:requestSport/:requestGroup', (req, res) => {
         const requestSport = req.params.requestSport;
         const requestGroup = req.params.requestGroup;
-        getEvents(requestSport, requestGroup)
+        getEvents(requestSport, requestGroup, null, 'match')
             .then((body) => {
-                res.send(JSON.parse(body))
+                res.send(JSON.parse(body).events)
             });
     });
 
-    app.get('/event/:requestSport/:requestGroup/:requestLeague', (req, res) => {
+    app.get('/match/:requestSport/:requestGroup/:requestLeague', (req, res) => {
         const requestSport = req.params.requestSport;
         const requestGroup = req.params.requestGroup;
         const requestLeague = req.params.requestLeague;
-        getEvents(requestSport, requestGroup, requestLeague)
+        getEvents(requestSport, requestGroup, requestLeague, 'match')
             .then((body) => {
-                res.send(JSON.parse(body))
+                res.send(JSON.parse(body).events)
+            });
+    });
+
+    /**
+     * get all Competition(Outrights) Events for selected sport
+     */
+    app.get('/competition/:requestSport', (req, res) => {
+        const requestSport = req.params.requestSport;
+
+        getEvents(requestSport, null, null, 'competition')
+            .then((body) => {
+                res.send(JSON.parse(body).events)
+            });
+    });
+
+    app.get('/competition/:requestSport/:requestGroup', (req, res) => {
+        const requestSport = req.params.requestSport;
+        const requestGroup = req.params.requestGroup;
+        getEvents(requestSport, requestGroup, null, 'competition')
+            .then((body) => {
+                res.send(JSON.parse(body).events)
+            });
+    });
+
+    app.get('/competition/:requestSport/:requestGroup/:requestLeague', (req, res) => {
+        const requestSport = req.params.requestSport;
+        const requestGroup = req.params.requestGroup;
+        const requestLeague = req.params.requestLeague;
+        getEvents(requestSport, requestGroup, requestLeague, 'competition')
+            .then((body) => {
+                res.send(JSON.parse(body).events)
             });
     });
 };
@@ -92,7 +126,7 @@ let getSport = (body, requestGroup) => {
 
     // filter out selected group from group list
     let group = groups.filter((group) => {
-        return group.englishName.toLowerCase().replace(' ', '_') === requestGroup.toLowerCase();
+        return group.termKey.toLowerCase() === requestGroup.toLowerCase();
     });
 
     return group ? group[0] : {};
@@ -103,7 +137,7 @@ let getGroup = (body, requestSport, requestGroup) => {
     let groups = getSport(body, requestSport).groups;
     // filter out selected group from group list
     let group = groups.filter((group) => {
-        return group.englishName.toLowerCase().replace(' ', '_') === requestGroup.toLowerCase();
+        return group.termKey.toLowerCase() === requestGroup.toLowerCase();
     });
 
     return group ? group[0] : {};
@@ -113,7 +147,7 @@ let getLeague = (body, requestSport, requestGroup, requestLeague) => {
     let groups = getGroup(body, requestSport, requestGroup).groups;
     // filter out selected group from group list
     let group = groups.filter((group) => {
-        return group.englishName.toLowerCase().replace(' ', '_') === requestLeague.toLowerCase();
+        return group.termKey.toLowerCase() === requestLeague.toLowerCase();
     });
 
     return group ? group[0] : {};
@@ -124,8 +158,9 @@ let getEvents = (selectedGroup, selectedSubGroup, selectedLeague, category) => {
     selectedSubGroup = selectedSubGroup ? selectedSubGroup : 'all';
     selectedLeague = selectedLeague ? selectedLeague : 'all';
     category = category ? category : 'match';
+    let eventType = category === 'match' ? 'matches' : 'competitions';
     let categoryGroup = category !== 'match' ? 'BET_OFFER_CATEGORY_SELECTION' : 'COMBINED';
-    let subGroupAllMatchesUrl = `https://o1-api.aws.kambicdn.com/offering/api/v3/ubau/listView/${selectedGroup}/${selectedSubGroup}/${selectedLeague}/all/matches.json?lang=en_AU&market=AU&client_id=2&categoryGroup=${categoryGroup}&displayDefault=true&category=${category}`;
+    let subGroupAllMatchesUrl = `https://o1-api.aws.kambicdn.com/offering/api/v3/ubau/listView/${selectedGroup}/${selectedSubGroup}/${selectedLeague}/all/${eventType}.json?lang=en_AU&market=AU&client_id=2&categoryGroup=${categoryGroup}&displayDefault=true&category=${category}`;
 
     return request(subGroupAllMatchesUrl);
 };
