@@ -1,7 +1,4 @@
-//const request = require("request");
 const request = require("request-promise");
-
-let groups;
 
 module.exports = function(app) {
     /**
