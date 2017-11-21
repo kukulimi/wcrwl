@@ -51,6 +51,35 @@ module.exports = function(app) {
             });
         });
     });
+
+    /**
+     * Go Crazy iterate through all competitons and get all matches and return matches by competition name
+     */
+    app.get('/tab/getallbycompetition', (req, res) => {
+        let gatheredList = [];
+        getAllcompetitions().then((body) => {
+            let promises = [];
+            JSON.parse(body).competitions.forEach((competition, idx, array) => {
+
+                let requestCompetitionName = competition.name;
+
+                let prom = getMatches(requestCompetitionName,77).then((matchBody) => {
+                    let matchesResult = parseMatches(JSON.parse(matchBody)).matches;
+                    if (matchesResult.length > 0) {
+                        gatheredList.push({competitionName : requestCompetitionName, matches : matchesResult});
+                    }
+                }).catch((err) => console.log('error while getting all matches - ',err));
+
+                promises.push(prom);
+
+                if (idx === array.length -1) {
+                    Promise.all(promises).then(() => {
+                        res.send(gatheredList);
+                    });
+                }
+            });
+        });
+    });
 };
 
 let getAllcompetitions = () => {
