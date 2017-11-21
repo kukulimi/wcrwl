@@ -68,7 +68,11 @@ let parseMatches = (matches) => {
     matches.matches.forEach((match) => {
         returnObj.matches.push({
             id : match.id,
+            date : match.startTime,
+            url : null,
+            timestamp : Date.now(),
             league : matches.name,
+            country : null,
             homeName : !match.contestants || match.contestants.length ===0 ? '' :
                 (match.contestants[0].isHome ? match.contestants[0].name : match.contestants[1].name),
             awayName : !match.contestants || match.contestants.length ===0 ? '' :
@@ -91,7 +95,7 @@ let getBookmakers = (match) => {
         returnObj.types.push({
             name : market.name,
             odds : getOdds(market.propositions),
-            move : ''
+            move : {}
         });
     });
     return returnObj;
