@@ -20,7 +20,7 @@ module.exports = function(app) {
 
         getMatches(requestCompetitionName).then((body) => {
             res.send(parseMatches(JSON.parse(body)));
-        });
+        }).catch((err) => console.log('error while getting matches - ',err));
     });
 
     /**
@@ -34,15 +34,18 @@ module.exports = function(app) {
 
                 let requestCompetitionName = competition.name;
 
-                let prom = getMatches(requestCompetitionName).then((matchBody) => {
-                    gatheredList.push(parseMatches(JSON.parse(matchBody)));
-                });
+                let prom = getMatches(requestCompetitionName,77).then((matchBody) => {
+                    let matchesResult = parseMatches(JSON.parse(matchBody)).matches;
+                    if (matchesResult.length > 0) {
+                        gatheredList = gatheredList.concat(matchesResult);
+                    }
+                }).catch((err) => console.log('error while getting all matches - ',err));
 
                 promises.push(prom);
 
                 if (idx === array.length -1) {
                     Promise.all(promises).then(() => {
-                        res.send(gatheredList);
+                        res.send({matches : gatheredList});
                     });
                 }
             });
@@ -55,9 +58,21 @@ let getAllcompetitions = () => {
     return request(compUrl);
 };
 
-let getMatches = (requestCompetition) => {
-    const matchUrl = `https://api.beta.tab.com.au/v1/tab-info-service/sports/Soccer/competitions/${requestCompetition}?jurisdiction=NSW&numTopMarkets=5`;
-    return request(matchUrl);
+let getMatches = (requestCompetition, buffer) => {
+    return new Promise((resolve, reject) => {
+        const matchUrl = `https://api.beta.tab.com.au/v1/tab-info-service/sports/Soccer/competitions/${requestCompetition}?jurisdiction=NSW&numTopMarkets=5`;
+        setTimeout(() => {
+            request(matchUrl).then((body) => {console.log(body);
+                resolve(body);
+            }).error((e) => {
+                console.log('error', e);
+                reject('something wrong');
+            });
+        }, buffer || 0);
+    });
+
+    // const matchUrl = `https://api.beta.tab.com.au/v1/tab-info-service/sports/Soccer/competitions/${requestCompetition}?jurisdiction=NSW&numTopMarkets=5`;
+    // return request(matchUrl);
 };
 
 let parseMatches = (matches) => {
