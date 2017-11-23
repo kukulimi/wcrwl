@@ -1,9 +1,10 @@
-const request = require("request-promise");
+cons
+t request = require("request-promise");
 const Promise = require('promise');
 
 module.exports = function(app) {
     /**
-     * Live bet section
+     * Live bet section (football only)
      */
     app.get('/1xbet/livebets', (req, res) => {
         getLiveBets().then((body) => {
@@ -12,11 +13,32 @@ module.exports = function(app) {
     });
 
     /**
-     * sports book section
+     * sports book section (football only)
      */
     app.get('/1xbet/sportsbook', (req, res) => {
         getLineFeeds().then((body) => {
             res.send(getMatches(body));
+        });
+    });
+
+    /**
+     * get both section
+     */
+    app.get('/1xbet/getall', (req, res) => {
+        let promises = [];
+        let allResults = [];
+
+        let promise1 = getLineFeeds().then((body) => {
+            allResults = allResults.concat(getMatches(body));
+        });
+        let promise2= getLiveBets().then((body) => {
+            allResults = allResults.concat(getMatches(body));
+        });
+
+        promises.push(promise1, promise2);
+
+        Promise.all(promises).then(() => {
+            res.send(allResults);
         });
     });
 };
@@ -41,10 +63,10 @@ let getMatches = (body) => {
             date : match.S, // This seems to be match start time but don't know the timezone.
             url : null,
             timestamp : Date.now(),
-            league : match.LE,
+            league : match.L,
             country : null,
-            homeName: match['O1E'],
-            awayName: match['02E'],
+            homeName: match['O1'],
+            awayName: match['O2'],
             bookmakers: getBookmakers(match.E)
         });
     });
